@@ -57,7 +57,7 @@
     padding: 5px 14px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink);
   }
   .unit-row button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  #chart { width: 100%; height: 260px; display: block; }
+  #chart { width: 100%; height: auto; display: block; }
   .chart-empty { text-align: center; color: var(--muted); padding: 60px 0; font-size: 14px; }
   form.log-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   form.log-form .full { grid-column: 1 / -1; }
@@ -103,8 +103,69 @@
   .se-summary .pill { background: var(--accent); border-radius: 999px; padding: 7px 14px; font-size: 13px; color: #fff; font-weight: 700; }
   .empty-note { color: var(--muted); font-size: 14px; text-align: center; padding: 18px 0; }
   footer { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 28px; line-height: 1.7; }
+  footer a { color: var(--accent-dark); font-weight: 700; }
   footer code { background: var(--grid); color: var(--ink); padding: 1px 6px; border-radius: 6px; font-size: 12px; }
-  @media (max-width: 560px) { form.log-form { grid-template-columns: 1fr; } }
+  .card h3.sub { font-size: 15px; margin: 24px 0 10px; }
+  .source { font-size: 12.5px; color: var(--muted); margin-top: 12px; line-height: 1.55; }
+  .source a { color: var(--accent-dark); font-weight: 700; }
+  /* medication card */
+  .med-row { margin-bottom: 14px; max-width: 380px; }
+  .next-dose { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .next-dose .big { font-size: 28px; font-weight: 800; }
+  .next-dose .when { font-size: 15px; font-weight: 600; color: var(--muted); }
+  .next-dose .big.due { color: var(--warn); }
+  /* charts: legend, tooltip, crosshair (series colors validated for CVD separation) */
+  .chart-box { position: relative; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; font-weight: 600; margin: 2px 0 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { display: inline-block; width: 22px; height: 0; border-top: 3px solid; }
+  .legend i.dash { border-top-style: dashed; }
+  .legend i.box { width: 12px; height: 12px; border: none; border-radius: 3px; }
+  .viz-tip {
+    position: absolute; pointer-events: none; z-index: 5; background: var(--ink); color: #fff;
+    font-size: 12.5px; line-height: 1.5; padding: 7px 10px; border-radius: 8px; white-space: nowrap;
+    transform: translate(-50%, calc(-100% - 12px));
+  }
+  .viz-tip[hidden] { display: none; }
+  /* side effects vs FDA */
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .cmp th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding: 6px 8px; border-bottom: 1.5px solid var(--line); }
+  .cmp td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+  .cmp td.name { font-weight: 700; white-space: nowrap; }
+  .cmp td.bars { width: 55%; }
+  .barline { display: flex; align-items: center; gap: 8px; margin: 2px 0; font-size: 12.5px; font-weight: 600; }
+  .barline b { display: block; height: 10px; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .you-pill { display: inline-block; font-size: 12px; font-weight: 700; background: var(--warn); color: #fff; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .you-none { color: var(--muted); font-size: 13px; }
+  .faers-row { display: grid; grid-template-columns: minmax(120px, 30%) 1fr; gap: 10px; align-items: center; margin: 5px 0; font-size: 13.5px; }
+  .faers-row .t { font-weight: 600; }
+  .faers-row .t em { white-space: nowrap; display: inline-block; font-style: normal; font-size: 11.5px; font-weight: 700; background: var(--warn); color: #fff; padding: 1px 7px; border-radius: 999px; margin-left: 6px; }
+  /* doctor summary */
+  .report-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(15, 31, 26, 0.75); overflow: auto; padding: 24px 12px; }
+  .report-overlay[hidden] { display: none; }
+  .report { background: #fff; color: var(--ink); max-width: 800px; margin: 0 auto; padding: 28px 32px; border-radius: 12px; }
+  .report h1 { font-size: 22px; margin-bottom: 2px; }
+  .report h2 { font-size: 15px; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1.5px solid var(--line); }
+  .report .meta { color: var(--muted); font-size: 13px; }
+  .report .kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 16px; font-size: 14px; }
+  .report .kv div span { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+  .report ul { padding-left: 18px; font-size: 14px; line-height: 1.6; }
+  .report svg { width: 100%; height: auto; }
+  .report-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 14px; }
+  @media (max-width: 560px) {
+    form.log-form { grid-template-columns: 1fr; }
+    .report { padding: 20px 16px; }
+    .report .kv { grid-template-columns: repeat(2, 1fr); }
+    .cmp td.bars { width: 45%; }
+    .faers-row { grid-template-columns: 50% 1fr; }
+  }
+  @media print {
+    body { background: #fff; padding: 0; max-width: none; }
+    body > *:not(#reportOverlay) { display: none !important; }
+    .report-overlay { position: static; background: none; padding: 0; overflow: visible; }
+    .report { padding: 0; max-width: none; border-radius: 0; }
+    .report-actions { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -133,6 +194,22 @@
 </div>
 
 <div class="card">
+  <h2>💉 My medication</h2>
+  <label class="f med-row">Medication
+    <select id="fDrug">
+      <option value="semaglutide">Semaglutide (Wegovy / Ozempic)</option>
+      <option value="tirzepatide">Tirzepatide (Zepbound / Mounjaro)</option>
+    </select>
+  </label>
+  <div class="next-dose" id="nextDose"></div>
+  <p class="hint" id="stepHint"></p>
+  <div class="btn-row">
+    <button class="btn" id="btnReport" type="button">🩺 Doctor summary</button>
+    <button class="btn ghost" id="btnIcs" type="button">📅 Add weekly reminder to calendar</button>
+  </div>
+</div>
+
+<div class="card">
   <h2>📈 Weight trend</h2>
   <div class="unit-row">
     <span>Unit:</span>
@@ -140,7 +217,15 @@
     <button data-unit="lb">lb</button>
     <button data-unit="jin">斤</button>
   </div>
-  <div id="chartWrap"><svg id="chart" role="img" aria-label="weight trend chart"></svg></div>
+  <div id="chartWrap" class="chart-box"><svg id="chart" role="img" aria-label="weight trend chart"></svg></div>
+</div>
+
+<div class="card">
+  <h2>📊 You vs. clinical trials</h2>
+  <p class="hint" id="trialSummary"></p>
+  <div class="legend" id="trialLegend"></div>
+  <div id="trialWrap" class="chart-box"><svg id="trialChart" role="img" aria-label="Your percent weight change compared with clinical-trial averages"></svg></div>
+  <p class="source" id="trialSource"></p>
 </div>
 
 <div class="card">
@@ -186,8 +271,15 @@
 </div>
 
 <div class="card">
-  <h2>🤒 Side-effect summary</h2>
+  <h2>🤒 Side effects vs. FDA data</h2>
   <div class="se-summary" id="seSummary"><div class="empty-note">No side effects logged yet.</div></div>
+  <h3 class="sub">In the clinical trials</h3>
+  <div class="legend" id="seLegend"></div>
+  <div id="seCompare"></div>
+  <p class="source" id="seSource"></p>
+  <h3 class="sub">🌍 Real-world reports to the FDA</h3>
+  <div id="faers"></div>
+  <p class="source" id="faersSource"></p>
 </div>
 
 <div class="card">
@@ -204,8 +296,13 @@
 <footer>
   Built for HealthHack 48 · All data is stored in your browser's <code>localStorage</code> —<br>
   no account, no server, no tracking. Your health data stays yours.<br>
-  DoseTrack is a personal log, not medical advice — talk to your clinician about dosing.
+  DoseTrack is a personal log, not medical advice — talk to your clinician about dosing.<br>
+  Trial and side-effect figures come from the FDA prescribing information via <a href="https://open.fda.gov/" target="_blank" rel="noopener">openFDA</a>.
 </footer>
+
+<div class="report-overlay" id="reportOverlay" hidden>
+  <div class="report" id="report" role="dialog" aria-modal="true" aria-label="Doctor summary"></div>
+</div>
 
 <script>
 (function () {
@@ -213,7 +310,52 @@
   var STORE_KEY = "dosetrack.entries.v1";
   var UNIT_KEY = "dosetrack.unit.v1";
   var SAMPLE_KEY = "dosetrack.sample.v1";
-  var SE_LIST = ["Nausea", "Fatigue", "Headache", "Constipation", "Vomiting", "Heartburn", "Dizziness", "None"];
+  var DRUG_KEY = "dosetrack.drug.v1";
+  var SE_LIST = ["Nausea", "Diarrhea", "Constipation", "Vomiting", "Abdominal pain", "Heartburn", "Fatigue", "Headache", "Dizziness", "None"];
+  var C_YOU = "#047857", C_TRIAL = "#1d4ed8", C_PLACEBO = "#b45309";
+
+  /* ---------- public reference data ----------
+     All numbers below are from the FDA prescribing information, pulled from openFDA
+     (api.fda.gov/drug/label.json) on 2026-10-17. Weight curves are % change from baseline. */
+  var DRUGS = {
+    semaglutide: {
+      name: "Semaglutide", trialName: "Wegovy 2.4 mg", endLabel: "Wegovy 2.4 mg", shortLabel: "2.4 mg", schedule: "Wegovy",
+      steps: [0.25, 0.5, 1.0, 1.7, 2.4],
+      // wk 20: Study 5 run-in, everyone on Wegovy, mean 107.2 → 96.1 kg; wk 68: Study 2 (STEP 1) ITT
+      trial: [[0, 0], [20, -10.4], [68, -14.9]],
+      placebo: [[0, 0], [68, -2.4]],
+      extra: [],
+      trialNote: "Week 20: Study 5 run-in (all patients on Wegovy, mean 107.2 → 96.1 kg). Week 68: Study 2 (STEP 1), Wegovy 2.4 mg −14.9% vs placebo −2.4%.",
+      // [lowest dose %, highest dose %, placebo %] — Table 3, Wegovy 2.4 mg (N=2,116) vs placebo (N=1,261)
+      se: { "Nausea": [44, 44, 16], "Diarrhea": [30, 30, 16], "Vomiting": [24, 24, 6], "Constipation": [24, 24, 11],
+            "Abdominal pain": [20, 20, 10], "Headache": [14, 14, 10], "Fatigue": [11, 11, 5], "Heartburn": [9, 9, 3], "Dizziness": [8, 8, 4] },
+      seNote: "Wegovy label, Table 3: Wegovy 2.4 mg (N=2,116) vs placebo (N=1,261), % of patients reporting each reaction. Heartburn = dyspepsia.",
+      labelUrl: "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22Wegovy%22"
+    },
+    tirzepatide: {
+      name: "Tirzepatide", trialName: "Zepbound 15 mg", endLabel: "15 mg", shortLabel: "15 mg", schedule: "Zepbound",
+      steps: [2.5, 5, 7.5, 10, 12.5, 15],
+      // wk 36: Study 4 open-label lead-in (10 or 15 mg), mean 107.3 → 85.2 kg; wk 72: Study 1 (SURMOUNT-1) ITT
+      trial: [[0, 0], [36, -20.6], [72, -20.9]],
+      placebo: [[0, 0], [72, -3.1]],
+      extra: [[72, -15.0, "5 mg"], [72, -19.5, "10 mg"]],
+      trialNote: "Week 36: Study 4 open-label lead-in (10 or 15 mg, mean 107.3 → 85.2 kg). Week 72: Study 1 (SURMOUNT-1), 5 / 10 / 15 mg −15.0 / −19.5 / −20.9% vs placebo −3.1%.",
+      // Table 1, pooled Studies 1 & 2: 5 / 10 / 15 mg vs placebo (N=958). Headache is not listed.
+      se: { "Nausea": [25, 29, 8], "Diarrhea": [19, 23, 8], "Vomiting": [8, 13, 2], "Constipation": [11, 17, 5],
+            "Abdominal pain": [9, 10, 5], "Heartburn": [9, 10, 4], "Fatigue": [5, 7, 3], "Dizziness": [4, 5, 2] },
+      seNote: "Zepbound label, Table 1: pooled Studies 1 & 2, Zepbound 5–15 mg vs placebo (N=958), % of patients reporting each reaction. Heartburn = dyspepsia.",
+      labelUrl: "https://api.fda.gov/drug/label.json?search=openfda.brand_name:%22Zepbound%22"
+    }
+  };
+  // Fallback if openFDA can't be reached: same query, captured 2026-10-17 (FAERS data through 2026-07-30)
+  var FAERS_SNAPSHOT = {
+    semaglutide: { total: 73001, updated: "2026-07-30", top: [["NAUSEA", 10674], ["VOMITING", 6964], ["DIARRHOEA", 6462], ["DECREASED APPETITE", 4905], ["CONSTIPATION", 4724], ["IMPAIRED GASTRIC EMPTYING", 3558], ["HEADACHE", 3099], ["FATIGUE", 3063]] },
+    tirzepatide: { total: 160663, updated: "2026-07-30", top: [["NAUSEA", 17092], ["DIARRHOEA", 10006], ["VOMITING", 8267], ["CONSTIPATION", 6502], ["FATIGUE", 4771], ["ABDOMINAL PAIN UPPER", 3709], ["HEADACHE", 3430], ["DECREASED APPETITE", 3087]] }
+  };
+  // reports that describe how the drug was used rather than a symptom
+  var FAERS_SKIP = /OFF LABEL|UNAPPROVED|DOSE|PRODUCT|DRUG INEFFECTIVE|NO ADVERSE|INAPPROPRIATE|MEDICATION ERROR|WRONG|EXPIRED|INTERCEPTED|DEVICE|ADMINISTRATION|THERAPY|INJECTION SITE|WEIGHT DECREASED|WEIGHT INCREASED|BLOOD GLUCOSE|HOSPITAL/;
+  var FAERS_TO_SE = { "NAUSEA": "Nausea", "VOMITING": "Vomiting", "DIARRHOEA": "Diarrhea", "CONSTIPATION": "Constipation", "HEADACHE": "Headache",
+    "FATIGUE": "Fatigue", "DIZZINESS": "Dizziness", "DYSPEPSIA": "Heartburn", "ABDOMINAL PAIN": "Abdominal pain", "ABDOMINAL PAIN UPPER": "Abdominal pain" };
 
   var HISTORY_LIMIT = 10;
 
@@ -236,6 +378,62 @@
   function localISO(dt) {
     var m = dt.getMonth() + 1, d = dt.getDate();
     return dt.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (d < 10 ? "0" : "") + d;
+  }
+  function chartWidth(el) { var w = el.clientWidth; return w ? Math.max(300, Math.min(900, Math.round(w))) : 900; }
+  function diffDays(a, b) { return Math.round((Date.parse(b) - Date.parse(a)) / 864e5); }
+  function addDays(iso, n) { var d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return localISO(d); }
+  function pct(v) { return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1) + "%"; }
+  function drug() { return DRUGS[localStorage.getItem(DRUG_KEY)] ? localStorage.getItem(DRUG_KEY) : "semaglutide"; }
+  function sortByDate(entries) { return entries.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }); }
+  function hasDose(e) { return typeof e.doseMg === "number" && e.doseMg > 0; }
+  function hasWeight(e) { return typeof e.weightKg === "number" && e.weightKg > 0; }
+
+  // Treatment starts at the first logged dose; baseline is the last weight on or before that day
+  // (or the first one after it). Returns % change per week since the first dose.
+  function treatmentSeries(entries) {
+    var sorted = sortByDate(entries), first = sorted.filter(hasDose)[0];
+    if (!first) return null;
+    var weights = sorted.filter(hasWeight);
+    var before = weights.filter(function (e) { return e.date <= first.date; });
+    var base = before.length ? before[before.length - 1] : weights[0];
+    if (!base) return null;
+    var pts = weights.filter(function (e) { return e.date >= first.date; }).map(function (e) {
+      return { week: diffDays(first.date, e.date) / 7, pct: (e.weightKg - base.weightKg) / base.weightKg * 100, e: e };
+    });
+    return { start: first.date, baseKg: base.weightKg, pts: pts };
+  }
+  // linear interpolation between published trial points (never extrapolates past the last one)
+  function interp(curve, week) {
+    for (var i = 1; i < curve.length; i++) {
+      if (week <= curve[i][0]) {
+        var a = curve[i - 1], b = curve[i];
+        return a[1] + (b[1] - a[1]) * (week - a[0]) / (b[0] - a[0]);
+      }
+    }
+    return null;
+  }
+
+  // Crosshair + tooltip for an SVG chart. pick(x in viewBox units) → { x, y, html } or null.
+  function attachHover(svg, box, W, H, padL, padR, padT, padB, pick) {
+    var tip = box.querySelector(".viz-tip");
+    if (!tip) { tip = document.createElement("div"); tip.className = "viz-tip"; box.appendChild(tip); }
+    tip.hidden = true; // the chart was just redrawn, so any open tooltip is stale
+    var cross = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    cross.setAttribute("y1", padT); cross.setAttribute("y2", H - padB);
+    cross.setAttribute("stroke", "#0f1f1a"); cross.setAttribute("stroke-width", "1"); cross.style.display = "none";
+    svg.appendChild(cross);
+    function hide() { tip.hidden = true; cross.style.display = "none"; }
+    svg.onpointermove = function (ev) {
+      var r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * W;
+      var p = x >= padL && x <= W - padR ? pick(x) : null;
+      if (!p) { hide(); return; }
+      cross.setAttribute("x1", p.x); cross.setAttribute("x2", p.x); cross.style.display = "";
+      tip.innerHTML = p.html; tip.hidden = false;
+      var left = p.x / W * r.width, half = tip.offsetWidth / 2;
+      tip.style.left = Math.min(Math.max(left, half), r.width - half) + "px";
+      tip.style.top = (p.y / H * r.height) + "px";
+    };
+    svg.onpointerleave = hide;
   }
 
   function load() {
@@ -294,7 +492,7 @@
       wrap.innerHTML = '<svg id="chart" role="img" aria-label="weight trend chart"></svg>';
       svg = document.getElementById("chart");
     }
-    var W = 900, H = 260, padL = 56, padR = 20, padT = 30, padB = 34;
+    var W = chartWidth(wrap), H = 260, padL = 56, padR = 20, padT = 30, padB = 34;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
     var vals = pts.map(function (p) { return fromKg(p.weightKg, unit); });
     var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
@@ -337,6 +535,13 @@
     });
     s += '<text x="4" y="12" text-anchor="start" font-size="12" fill="#3b4d46" font-weight="600">' + unitLabel(unit) + '</text>';
     svg.innerHTML = s;
+    attachHover(svg, wrap, W, H, padL, padR, padT, padB, function (x) {
+      var best = null;
+      pts.forEach(function (p) { if (!best || Math.abs(X(p) - x) < Math.abs(X(best) - x)) best = p; });
+      return { x: X(best), y: Y(fromKg(best.weightKg, unit)),
+        html: "<b>" + esc(fmtDate(best.date)) + "</b><br>" + fromKg(best.weightKg, unit).toFixed(1) + " " + unitLabel(unit) +
+          (hasDose(best) ? " · 💉 " + best.doseMg + " mg" : "") };
+    });
   }
 
   /* ---------- stats ---------- */
@@ -419,6 +624,299 @@
     }).join("");
   }
 
+  function seCounts(entries) {
+    var counts = {};
+    entries.forEach(function (e) {
+      (e.sideEffects || []).forEach(function (s) { if (s !== "None") counts[s] = (counts[s] || 0) + 1; });
+    });
+    return counts;
+  }
+  function kgStr(kg) { return kg.toFixed(1) + " kg / " + (kg * 2.20462).toFixed(1) + " lb"; }
+  function download(text, name, type) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name;
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+  }
+
+  /* ---------- medication: next dose + titration step ---------- */
+  function doseInfo(entries) {
+    var doses = sortByDate(entries).filter(hasDose);
+    if (!doses.length) return null;
+    var last = doses[doses.length - 1], shots = 0;
+    for (var i = doses.length - 1; i >= 0 && doses[i].doseMg === last.doseMg; i--) shots++;
+    return { last: last, next: addDays(last.date, 7), shots: shots, doses: doses };
+  }
+
+  function renderMed(entries) {
+    var d = DRUGS[drug()], info = doseInfo(entries);
+    var box = document.getElementById("nextDose"), hint = document.getElementById("stepHint");
+    document.getElementById("fDrug").value = drug();
+    if (!info) {
+      box.innerHTML = '<span class="big">No dose logged yet</span>';
+      hint.textContent = "Log your first dose (mg) below and DoseTrack will count down to your next weekly shot.";
+      return;
+    }
+    var days = diffDays(localISO(new Date()), info.next);
+    var big = days > 1 ? "Next dose in " + days + " days" : days === 1 ? "Next dose tomorrow" :
+      days === 0 ? "Dose due today" : "Dose overdue by " + (-days) + (days === -1 ? " day" : " days");
+    box.innerHTML = '<span class="big' + (days <= 0 ? " due" : "") + '">' + big + "</span>" +
+      '<span class="when">' + esc(fmtDate(info.next)) + " · last shot " + info.last.doseMg + " mg on " +
+      esc(fmtDate(info.last.date).replace(/, \d{4}$/, "")) + "</span>";
+    var idx = -1, mg = info.last.doseMg, shots = info.shots;
+    d.steps.forEach(function (s, i) { if (Math.abs(s - mg) < 0.001) idx = i; });
+    if (idx < 0) hint.textContent = mg + " mg isn't a step on the standard " + d.schedule + " schedule (" + d.steps.join(" → ") + " mg). Follow your prescriber's plan.";
+    else if (idx === d.steps.length - 1) hint.textContent = "You're on the " + d.schedule + " maintenance dose (" + mg + " mg), " + shots + " shot" + (shots === 1 ? "" : "s") + " so far.";
+    else if (shots >= 4) hint.textContent = shots + " shots at " + mg + " mg. On the standard " + d.schedule + " schedule the next step is " + d.steps[idx + 1] + " mg. Only change your dose as your prescriber directs.";
+    else hint.textContent = "Shot " + shots + " of 4 at " + mg + " mg. On the standard " + d.schedule + " schedule, " + d.steps[idx + 1] + " mg comes after 4 weeks.";
+  }
+
+  /* ---------- you vs. clinical trials ---------- */
+  function trialSummaryText(d, ser) {
+    var end = d.trial[d.trial.length - 1];
+    if (!ser || !ser.pts.length) return "Log your doses and weight to see how you compare with the " + d.trialName + " trial average. The published curve is already on the chart.";
+    var last = ser.pts[ser.pts.length - 1], wk = Math.round(last.week), t = interp(d.trial, wk);
+    var s = "Week " + wk + " on " + d.name.toLowerCase() + ": you're at " + pct(last.pct) + " from your starting weight. ";
+    if (t === null) return s + "That's past the longest trial (" + end[0] + " weeks, average " + pct(end[1]) + ").";
+    var diff = last.pct - t;
+    s += "Trial average around week " + wk + ": ≈ " + pct(t) + ". ";
+    s += diff <= -2 ? "That's more than the trial average at this point." : diff < 2 ? "That's right around the trial average." :
+      "That's less than the trial average so far. Responses vary widely; talk with your clinician if you're concerned.";
+    return s + " By week " + end[0] + " the trial average was " + pct(end[1]) + ".";
+  }
+
+  function renderTrial(entries) {
+    var d = DRUGS[drug()], ser = treatmentSeries(entries), pts = ser ? ser.pts : [];
+    var svg = document.getElementById("trialChart"), wrap = document.getElementById("trialWrap");
+    var endWeek = d.trial[d.trial.length - 1][0];
+    document.getElementById("trialSummary").textContent = trialSummaryText(d, ser);
+    document.getElementById("trialLegend").innerHTML =
+      '<span><i style="border-color:' + C_YOU + '"></i>You</span>' +
+      '<span><i class="dash" style="border-color:' + C_TRIAL + '"></i>Trial average (' + esc(d.trialName) + ")</span>" +
+      '<span><i class="dash" style="border-color:' + C_PLACEBO + '"></i>Placebo</span>';
+    document.getElementById("trialSource").innerHTML = 'Source: FDA prescribing information via <a href="' + d.labelUrl +
+      '" target="_blank" rel="noopener">openFDA</a>. ' + esc(d.trialNote) + " Dashed lines connect the published data points.";
+
+    var W = chartWidth(wrap), narrow = W < 600, H = narrow ? 260 : 300, padL = 50, padR = narrow ? 108 : 130, padT = 16, padB = 34;
+    var maxWeek = Math.max(endWeek, pts.length ? pts[pts.length - 1].week : 0) + 2;
+    var vals = [0].concat(d.trial.map(function (p) { return p[1]; }), d.extra.map(function (p) { return p[1]; }), pts.map(function (p) { return p.pct; }));
+    var lo = Math.floor((Math.min.apply(null, vals) - 1) / 5) * 5, hi = Math.ceil((Math.max.apply(null, vals) + 1) / 5) * 5;
+    function X(w) { return padL + w / maxWeek * (W - padL - padR); }
+    function Y(v) { return padT + (hi - v) / (hi - lo) * (H - padT - padB); }
+    function path(arr) { return arr.map(function (p, i) { return (i ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1); }).join(" "); }
+    function dot(x, y, r, fill, stroke) { return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r + '" fill="' + fill + '" stroke="' + (stroke || "#fff") + '" stroke-width="2"/>'; }
+    function text(x, y, t, anchor, weight) { return '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + (anchor || "start") + '" font-size="12" font-weight="' + (weight || 600) + '" fill="#0f1f1a">' + esc(t) + "</text>"; }
+
+    var s = "";
+    for (var v = lo; v <= hi; v += 5) {
+      s += '<line x1="' + padL + '" y1="' + Y(v) + '" x2="' + (W - padR) + '" y2="' + Y(v) + '" stroke="' + (v === 0 ? "#3b4d46" : "#cfd9d5") + '" stroke-width="1"/>';
+      s += '<text x="' + (padL - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="12" fill="#3b4d46">' + (v === 0 ? "0%" : pct(v).replace(".0", "")) + "</text>";
+    }
+    for (var w = 0; w <= maxWeek; w += narrow ? 24 : 12) {
+      s += '<text x="' + X(w) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11" fill="#3b4d46">' + (w === 0 ? "first dose" : "wk " + w) + "</text>";
+    }
+    // reference curves first, so your line sits on top
+    s += '<path d="' + path(d.placebo) + '" fill="none" stroke="' + C_PLACEBO + '" stroke-width="2" stroke-dasharray="6 5"/>';
+    s += '<path d="' + path(d.trial) + '" fill="none" stroke="' + C_TRIAL + '" stroke-width="2.5" stroke-dasharray="6 5"/>';
+    // right-edge labels, nudged apart so they never overlap
+    var endLabels = [{ y: Y(d.trial[d.trial.length - 1][1]), t: (narrow ? d.shortLabel : d.endLabel) + " " + pct(d.trial[d.trial.length - 1][1]) },
+      { y: Y(d.placebo[d.placebo.length - 1][1]), t: "Placebo " + pct(d.placebo[d.placebo.length - 1][1]) }];
+    d.extra.forEach(function (p) { endLabels.push({ y: Y(p[1]), t: p[2] + " " + pct(p[1]) }); });
+    endLabels.sort(function (a, b) { return a.y - b.y; });
+    for (var i = 1; i < endLabels.length; i++) endLabels[i].y = Math.max(endLabels[i].y, endLabels[i - 1].y + 15);
+    endLabels.forEach(function (l) { s += text(X(endWeek) + 10, l.y + 4, l.t); });
+
+    var userEnd = pts.length ? pts[pts.length - 1] : null;
+    d.placebo.slice(1).forEach(function (p) { s += dot(X(p[0]), Y(p[1]), 5, C_PLACEBO); });
+    d.extra.forEach(function (p) { s += dot(X(p[0]), Y(p[1]), 5, "#fff", C_TRIAL); });
+    d.trial.slice(1).forEach(function (p, i, arr) {
+      s += dot(X(p[0]), Y(p[1]), 5.5, C_TRIAL);
+      if (i < arr.length - 1) {
+        // label intermediate points on the side away from your line
+        var userBelow = userEnd && Math.abs(userEnd.week - p[0]) < 8 && userEnd.pct < p[1];
+        s += text(X(p[0]), Y(p[1]) + (userBelow ? -12 : 20), "wk " + p[0] + ": " + pct(p[1]), "middle");
+      }
+    });
+    if (pts.length) {
+      s += '<path d="' + path(pts.map(function (p) { return [p.week, p.pct]; })) + '" fill="none" stroke="' + C_YOU + '" stroke-width="2.5" stroke-linejoin="round"/>';
+      var ux = X(userEnd.week), uy = Y(userEnd.pct), near = d.trial.slice(1, -1).filter(function (p) { return Math.abs(userEnd.week - p[0]) < 8; })[0];
+      var below = near && userEnd.pct < near[1];
+      s += dot(ux, uy, 6, C_YOU);
+      s += text(ux, uy + (below ? 22 : -12), "You " + pct(userEnd.pct), "middle", 800);
+    }
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.style.width = "100%"; svg.style.height = "auto"; svg.style.display = "block";
+    svg.innerHTML = s;
+
+    attachHover(svg, wrap, W, H, padL, padR, padT, padB, function (x) {
+      var week = Math.max(0, (x - padL) / (W - padL - padR) * maxWeek), you = null;
+      pts.forEach(function (p) { if (Math.abs(p.week - week) < 1 && (!you || Math.abs(p.week - week) < Math.abs(you.week - week))) you = p; });
+      if (you) week = you.week;
+      var t = interp(d.trial, week), pl = interp(d.placebo, week);
+      if (!you && t === null) return null;
+      var html = "<b>Week " + Math.round(week) + "</b>" + (you ? "<br>You: " + pct(you.pct) : "") +
+        (t !== null ? "<br>Trial avg ≈ " + pct(t) : "") + (pl !== null ? "<br>Placebo ≈ " + pct(pl) : "");
+      return { x: X(week), y: you ? Y(you.pct) : Y(t), html: html };
+    });
+  }
+
+  /* ---------- side effects vs. FDA label ---------- */
+  function renderSeCompare(entries) {
+    var d = DRUGS[drug()], counts = seCounts(entries), names = Object.keys(d.se);
+    Object.keys(counts).forEach(function (n) { if (names.indexOf(n) < 0) names.push(n); });
+    names.sort(function (a, b) { return (d.se[b] ? d.se[b][1] : -1) - (d.se[a] ? d.se[a][1] : -1); });
+    function bar(color, v, label) {
+      return '<div class="barline" title="' + label + '"><b style="width:' + (v / 50 * 80) + '%;background:' + color + '"></b>' + label + "</div>";
+    }
+    document.getElementById("seLegend").innerHTML =
+      '<span><i class="box" style="background:' + C_TRIAL + '"></i>' + esc(d.name) + " in trials</span>" +
+      '<span><i class="box" style="background:' + C_PLACEBO + '"></i>Placebo</span>' +
+      '<span><span class="you-pill">days</span>Days you logged it</span>';
+    document.getElementById("seCompare").innerHTML = '<table class="cmp"><thead><tr><th>Side effect</th><th>You</th><th>% of trial patients</th></tr></thead><tbody>' +
+      names.map(function (n) {
+        var r = d.se[n], c = counts[n];
+        var you = c ? '<span class="you-pill">' + c + (c === 1 ? " day" : " days") + "</span>" : '<span class="you-none">—</span>';
+        var bars = r ? bar(C_TRIAL, r[1], (r[0] === r[1] ? r[1] : r[0] + "–" + r[1]) + "%") + bar(C_PLACEBO, r[2], r[2] + "%")
+          : '<span class="you-none">Not listed in the label</span>';
+        return '<tr><td class="name">' + esc(n) + "</td><td>" + you + '</td><td class="bars">' + bars + "</td></tr>";
+      }).join("") + "</tbody></table>";
+    document.getElementById("seSource").innerHTML = "Source: " + esc(d.seNote) + ' Via <a href="' + d.labelUrl + '" target="_blank" rel="noopener">openFDA</a>.';
+  }
+
+  /* ---------- real-world reports (openFDA FAERS, live) ---------- */
+  var faersData = {}, faersLive = {};
+  function loadFaers() {
+    var g = drug();
+    renderFaers(load());
+    if (faersData[g]) return;
+    var base = "https://api.fda.gov/drug/event.json?search=patient.drug.openfda.generic_name:%22" + g + "%22";
+    var ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
+    function get(url) {
+      return fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+    }
+    // only the drug name goes over the network, never anything from your log
+    Promise.all([get(base + "&count=patient.reaction.reactionmeddrapt.exact&limit=60"), get(base + "&limit=1")])
+      .then(function (res) {
+        faersData[g] = {
+          total: res[1].meta.results.total, updated: res[1].meta.last_updated,
+          top: res[0].results.filter(function (r) { return !FAERS_SKIP.test(r.term); }).slice(0, 8).map(function (r) { return [r.term, r.count]; })
+        };
+        faersLive[g] = true;
+      })
+      .catch(function () { faersData[g] = FAERS_SNAPSHOT[g]; faersLive[g] = false; })
+      .then(function () { clearTimeout(timer); if (drug() === g) renderFaers(load()); });
+  }
+  function renderFaers(entries) {
+    var g = drug(), data = faersData[g], box = document.getElementById("faers"), src = document.getElementById("faersSource");
+    if (!data) { box.innerHTML = '<div class="empty-note">Asking openFDA…</div>'; src.textContent = ""; return; }
+    var counts = seCounts(entries), max = data.top[0][1];
+    box.innerHTML = data.top.map(function (t) {
+      var name = t[0].charAt(0) + t[0].slice(1).toLowerCase(), mine = FAERS_TO_SE[t[0]] && counts[FAERS_TO_SE[t[0]]];
+      return '<div class="faers-row"><span class="t">' + esc(name) + (mine ? "<em>you too</em>" : "") + "</span>" +
+        '<div class="barline" title="' + t[1].toLocaleString() + ' reports"><b style="width:' + (t[1] / max * 80) + "%;background:" + C_TRIAL + '"></b>' + t[1].toLocaleString() + "</div></div>";
+    }).join("");
+    src.innerHTML = (faersLive[g] ? "Live from " : "Saved snapshot (openFDA couldn't be reached) from ") +
+      '<a href="https://open.fda.gov/apis/drug/event/" target="_blank" rel="noopener">openFDA FAERS</a>: ' + data.total.toLocaleString() +
+      " reports mentioning " + DRUGS[g].name.toLowerCase() + ", data through " + esc(fmtDate(data.updated)) +
+      ". These are voluntary reports: they show what people report, not how often it happens. Only the drug name is sent, never your data.";
+  }
+
+  /* ---------- doctor summary (print / save as PDF) ---------- */
+  var savedTitle = document.title;
+  function openReport() {
+    var entries = load();
+    if (!entries.length) { alert("Log a few entries first, or load the sample data."); return; }
+    var d = DRUGS[drug()], sorted = sortByDate(entries), weights = sorted.filter(hasWeight);
+    var info = doseInfo(entries), ser = treatmentSeries(entries), counts = seCounts(entries);
+    var today = localISO(new Date()), lastW = weights[weights.length - 1];
+    var kv = [];
+    function k(label, value) { kv.push("<div><span>" + label + "</span>" + value + "</div>"); }
+    k("Medication", esc(d.name) + (info ? ", " + info.last.doseMg + " mg weekly" : ""));
+    k("First logged dose", ser ? esc(fmtDate(ser.start)) : "—");
+    k("Weeks on treatment", ser ? String(Math.floor(diffDays(ser.start, today) / 7)) : "—");
+    k("Starting weight", ser ? kgStr(ser.baseKg) : "—");
+    k("Latest weight", lastW ? kgStr(lastW.weightKg) + "<br><small>" + esc(fmtDate(lastW.date)) + "</small>" : "—");
+    if (ser && ser.pts.length) {
+      var lp = ser.pts[ser.pts.length - 1], dk = lp.e.weightKg - ser.baseKg;
+      k("Change since first dose", (dk > 0 ? "+" : "−") + Math.abs(dk).toFixed(1) + " kg (" + pct(lp.pct) + ")");
+    } else k("Change since first dose", "—");
+
+    // dose history: consecutive shots at the same dose become one line
+    var periods = [];
+    (info ? info.doses : []).forEach(function (e) {
+      var p = periods[periods.length - 1];
+      if (p && p.mg === e.doseMg) { p.to = e.date; p.n++; } else periods.push({ mg: e.doseMg, from: e.date, to: e.date, n: 1 });
+    });
+    var short = function (iso) { return esc(fmtDate(iso).replace(/, \d{4}$/, "")); };
+    var doseList = periods.length ? periods.map(function (p) {
+      return "<li><b>" + p.mg + " mg</b>: " + short(p.from) + (p.n > 1 ? " – " + short(p.to) : "") + " · " + p.n + " shot" + (p.n === 1 ? "" : "s") + "</li>";
+    }).join("") : "<li>No doses logged.</li>";
+
+    var seRows = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).map(function (n) {
+      var lastDay = sorted.filter(function (e) { return (e.sideEffects || []).indexOf(n) >= 0; }).pop();
+      var r = d.se[n];
+      return "<li><b>" + esc(n) + "</b>: " + counts[n] + " day" + (counts[n] === 1 ? "" : "s") + ", last " + short(lastDay.date) +
+        (r ? " <small>(trials: " + (r[0] === r[1] ? r[1] : r[0] + "–" + r[1]) + "% vs placebo " + r[2] + "%)</small>" : "") + "</li>";
+    }).join("") || "<li>None logged.</li>";
+
+    var recent = sorted.filter(function (e) { return e.mood && diffDays(e.date, today) <= 28; });
+    var moodAvg = recent.length ? (recent.reduce(function (s, e) { return s + parseInt(e.mood, 10); }, 0) / recent.length).toFixed(1) : null;
+    var notes = sorted.filter(function (e) { return e.notes; }).slice(-6).reverse().map(function (e) {
+      return "<li><b>" + short(e.date) + "</b>: " + esc(e.notes) + "</li>";
+    }).join("") || "<li>No notes.</li>";
+    var chart = document.getElementById("chart");
+
+    document.getElementById("report").innerHTML =
+      '<div class="report-actions"><button class="btn ghost" id="btnReportClose" type="button">Close</button>' +
+      '<button class="btn" id="btnReportPrint" type="button">🖨 Print / Save as PDF</button></div>' +
+      "<h1>💊 DoseTrack: GLP-1 treatment summary</h1>" +
+      '<p class="meta">Patient-recorded log · ' + short(sorted[0].date) + " – " + esc(fmtDate(sorted[sorted.length - 1].date)) +
+      " · " + entries.length + " entries · generated " + esc(fmtDate(today)) + "</p>" +
+      "<h2>At a glance</h2><div class=\"kv\">" + kv.join("") + "</div>" +
+      (chart ? "<h2>Weight trend</h2>" + chart.outerHTML.replace(' id="chart"', "") : "") +
+      "<h2>Compared with clinical trials</h2><p>" + esc(trialSummaryText(d, ser)) + "</p>" +
+      "<h2>Dose history</h2><ul>" + doseList + "</ul>" +
+      "<h2>Side effects</h2><ul>" + seRows + "</ul>" +
+      (moodAvg ? "<p class=\"meta\">Average mood / energy, last 4 weeks: " + moodAvg + " / 5</p>" : "") +
+      "<h2>Recent notes</h2><ul>" + notes + "</ul>" +
+      '<p class="source">Recorded by the patient in DoseTrack; not a medical record. Trial figures: FDA prescribing information for ' +
+      (drug() === "semaglutide" ? "Wegovy" : "Zepbound") + " (via openFDA).</p>";
+    document.getElementById("btnReportClose").addEventListener("click", closeReport);
+    document.getElementById("btnReportPrint").addEventListener("click", function () { window.print(); });
+    document.title = "DoseTrack summary " + today;
+    document.getElementById("reportOverlay").hidden = false;
+  }
+  function closeReport() {
+    document.getElementById("reportOverlay").hidden = true;
+    document.title = savedTitle;
+  }
+  document.getElementById("btnReport").addEventListener("click", openReport);
+  document.getElementById("reportOverlay").addEventListener("click", function (ev) { if (ev.target === this) closeReport(); });
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !document.getElementById("reportOverlay").hidden) closeReport(); });
+
+  /* ---------- weekly reminder (.ics) ---------- */
+  document.getElementById("btnIcs").addEventListener("click", function () {
+    var info = doseInfo(load()), today = localISO(new Date());
+    var start = info && info.next >= today ? info.next : today;
+    var stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    // generic title on purpose: calendars get shared, so no drug name or dose in the event
+    var ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//DoseTrack//HealthHack 48//EN", "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT", "UID:dosetrack-" + Date.now() + "@dosetrack", "DTSTAMP:" + stamp,
+      "DTSTART:" + start.replace(/-/g, "") + "T090000", "DURATION:PT15M", "RRULE:FREQ=WEEKLY",
+      "SUMMARY:Weekly dose (DoseTrack)", "DESCRIPTION:Time for your weekly shot. Log it in DoseTrack afterwards.",
+      "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Time for your weekly dose", "TRIGGER:PT0M", "END:VALARM",
+      "END:VEVENT", "END:VCALENDAR"].join("\r\n") + "\r\n";
+    download(ics, "dosetrack-weekly-dose.ics", "text/calendar");
+  });
+
+  document.getElementById("fDrug").addEventListener("change", function () {
+    localStorage.setItem(DRUG_KEY, this.value);
+    render();
+    loadFaers();
+  });
+
   /* ---------- sample data (for the demo) ---------- */
   // 20 weeks ending yesterday, following the standard 4-week semaglutide step-up.
   // Seeded PRNG so every visitor sees the same journey.
@@ -443,6 +941,8 @@
       var se = [];
       if (rand() < risk) se.push("Nausea");
       if (rand() < risk * 0.6) se.push("Fatigue");
+      if (rand() < risk * 0.5) se.push("Diarrhea");
+      if (rand() < risk * 0.3) se.push("Abdominal pain");
       if (rand() < 0.12) se.push("Constipation");
       if (rand() < risk * 0.25) se.push("Heartburn");
       if (sinceStep < 3 && step < 4 && rand() < 0.15) se.push("Vomiting");
@@ -490,6 +990,8 @@
     } else {
       save(makeSampleData());
       localStorage.setItem(SAMPLE_KEY, "1");
+      localStorage.setItem(DRUG_KEY, "semaglutide"); // the sample journey is a semaglutide step-up
+      loadFaers();
     }
     render();
   });
@@ -498,9 +1000,13 @@
     var entries = load();
     renderBanner(entries);
     renderStats(entries);
+    renderMed(entries);
     renderChart(entries);
+    renderTrial(entries);
     renderEntries(entries);
     renderSeSummary(entries);
+    renderSeCompare(entries);
+    renderFaers(entries);
     document.querySelectorAll(".uLabel").forEach(function (el) { el.textContent = unitLabel(unit); });
     document.querySelectorAll(".unit-row button").forEach(function (b) {
       b.classList.toggle("active", b.dataset.unit === unit);
@@ -550,12 +1056,7 @@
 
   /* ---------- export / import ---------- */
   document.getElementById("btnExport").addEventListener("click", function () {
-    var blob = new Blob([JSON.stringify(load(), null, 2)], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "dosetrack-export-" + localISO(new Date()) + ".json";
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    download(JSON.stringify(load(), null, 2), "dosetrack-export-" + localISO(new Date()) + ".json", "application/json");
   });
   document.getElementById("btnWipe").addEventListener("click", function () {
     if (!load().length || !confirm("Delete every entry stored in this browser? This can't be undone.")) return;
@@ -729,8 +1230,21 @@
     }
   });
 
+  var lastWidth = window.innerWidth, resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      var entries = load();
+      renderChart(entries);
+      renderTrial(entries);
+    }, 150);
+  });
+
   renderChips();
   render();
+  loadFaers();
 })();
 </script>
 </body>
