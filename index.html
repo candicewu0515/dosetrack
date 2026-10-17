@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DoseTrack — Your GLP-1 Companion</title>
+<style>
+  :root {
+    --bg: #f6fbf9;
+    --card: #ffffff;
+    --ink: #1c2b26;
+    --muted: #6b7f78;
+    --accent: #0e9f6e;
+    --accent-dark: #0b7a55;
+    --accent-soft: #e3f5ec;
+    --warn: #e8734a;
+    --line: #e2ece8;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink);
+    padding: 24px 16px 64px; max-width: 960px; margin: 0 auto;
+  }
+  header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  header h1 { font-size: 26px; letter-spacing: -0.5px; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .privacy-badge {
+    background: var(--accent-soft); color: var(--accent-dark);
+    font-size: 12.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid #bfe6d2; white-space: nowrap;
+  }
+  .demo-banner {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: #fffaf0; border: 1px solid #f3dfb5; border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 16px;
+  }
+  .demo-banner[hidden] { display: none; }
+  .demo-banner span { display: block; color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .stat .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .stat .value { font-size: 26px; font-weight: 700; }
+  .stat .value small { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .stat .value.down { color: var(--accent-dark); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 17px; margin-bottom: 14px; }
+  .unit-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+  .unit-row button {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 5px 14px; font-size: 13px; cursor: pointer; color: var(--muted);
+  }
+  .unit-row button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  #chart { width: 100%; height: 260px; display: block; }
+  .chart-empty { text-align: center; color: var(--muted); padding: 60px 0; font-size: 14px; }
+  form.log-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  form.log-form .full { grid-column: 1 / -1; }
+  label.f { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  input, select, textarea {
+    font-size: 15px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: #fbfdfc; color: var(--ink); width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .se-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .se-chip {
+    border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 7px 14px; font-size: 13.5px; cursor: pointer; color: var(--ink);
+    user-select: none;
+  }
+  .se-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); font-weight: 600; }
+  .btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    padding: 12px 20px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .btn:hover { background: var(--accent-dark); }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); font-weight: 600; }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent-dark); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .entries { display: flex; flex-direction: column; gap: 10px; }
+  .entry {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fbfdfc;
+  }
+  .entry .d { font-weight: 700; font-size: 14px; }
+  .entry .meta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .entry .se-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .entry .se-tags span { font-size: 11.5px; background: #fff4ec; color: #b3541e; border: 1px solid #f3d9c2; padding: 2px 9px; border-radius: 999px; }
+  .entry .del { background: none; border: none; color: #c0ccc8; cursor: pointer; font-size: 18px; padding: 4px 8px; }
+  .entry .del:hover { color: var(--warn); }
+  .se-summary { display: flex; flex-wrap: wrap; gap: 8px; }
+  .se-summary .pill { background: var(--accent-soft); border-radius: 999px; padding: 7px 14px; font-size: 13px; color: var(--accent-dark); font-weight: 600; }
+  .empty-note { color: var(--muted); font-size: 14px; text-align: center; padding: 18px 0; }
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 28px; line-height: 1.7; }
+  footer code { background: #eef4f1; padding: 1px 6px; border-radius: 6px; font-size: 12px; }
+  @media (max-width: 560px) { form.log-form { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>💊 Dose<span>Track</span></h1>
+    <p>Your personal GLP-1 companion — dosage, weight &amp; side effects in one place.</p>
+  </div>
+  <div class="privacy-badge">🔒 100% private — data never leaves this browser</div>
+</header>
+
+<div class="demo-banner" id="demoBanner" hidden>
+  <div>
+    <strong id="demoTitle"></strong>
+    <span id="demoText"></span>
+  </div>
+  <button class="btn" id="btnDemo" type="button"></button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="label">Logging streak</div><div class="value" id="stStreak">0 <small>days</small></div></div>
+  <div class="stat"><div class="label">Entries</div><div class="value" id="stEntries">0</div></div>
+  <div class="stat"><div class="label">Weight change</div><div class="value" id="stChange">–</div></div>
+  <div class="stat"><div class="label">Latest dose</div><div class="value" id="stDose">–</div></div>
+</div>
+
+<div class="card">
+  <h2>📈 Weight trend</h2>
+  <div class="unit-row">
+    <span>Unit:</span>
+    <button data-unit="kg" class="active">kg</button>
+    <button data-unit="lb">lb</button>
+    <button data-unit="jin">斤</button>
+  </div>
+  <div id="chartWrap"><svg id="chart" role="img" aria-label="weight trend chart"></svg></div>
+</div>
+
+<div class="card">
+  <h2>➕ Log today</h2>
+  <form class="log-form" id="logForm">
+    <label class="f">Date
+      <input type="date" id="fDate" required>
+    </label>
+    <label class="f">Dose (mg)
+      <input type="number" id="fDose" step="0.01" min="0" placeholder="e.g. 1.0">
+    </label>
+    <label class="f"><span>Weight (<span class="uLabel">kg</span>)</span>
+      <input type="number" id="fWeight" step="0.1" min="0" placeholder="e.g. 68.5">
+    </label>
+    <label class="f">Mood / energy (1–5)
+      <select id="fMood">
+        <option value="">—</option>
+        <option>1 😞</option><option>2 🙁</option><option>3 😐</option>
+        <option>4 🙂</option><option>5 😄</option>
+      </select>
+    </label>
+    <label class="f full">Side effects
+      <div class="se-grid" id="seGrid"></div>
+    </label>
+    <label class="f full">Notes
+      <textarea id="fNotes" rows="2" placeholder="Anything else worth remembering…"></textarea>
+    </label>
+    <div class="full btn-row">
+      <button type="submit" class="btn">Save entry</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>🤒 Side-effect summary</h2>
+  <div class="se-summary" id="seSummary"><div class="empty-note">No side effects logged yet.</div></div>
+</div>
+
+<div class="card">
+  <h2>🗂️ History</h2>
+  <div class="entries" id="entries"></div>
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn ghost" id="btnExport">⬇ Export JSON</button>
+    <button class="btn ghost" id="btnImport">⬆ Import JSON</button>
+    <input type="file" id="fileImport" accept="application/json" style="display:none">
+  </div>
+</div>
+
+<footer>
+  Built for HealthHack 48 · All data is stored in your browser's <code>localStorage</code> —<br>
+  no account, no server, no tracking. Your health data stays yours.<br>
+  DoseTrack is a personal log, not medical advice — talk to your clinician about dosing.
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var STORE_KEY = "dosetrack.entries.v1";
+  var UNIT_KEY = "dosetrack.unit.v1";
+  var SAMPLE_KEY = "dosetrack.sample.v1";
+  var SE_LIST = ["Nausea", "Fatigue", "Headache", "Constipation", "Vomiting", "Heartburn", "Dizziness", "None"];
+
+  var HISTORY_LIMIT = 10;
+
+  var unit = localStorage.getItem(UNIT_KEY) || "kg";
+  var selectedSE = {};
+  var showAllHistory = false;
+
+  function toKg(v, u) {
+    if (u === "lb") return v / 2.20462;
+    if (u === "jin") return v / 2;
+    return v;
+  }
+  function fromKg(v, u) {
+    if (u === "lb") return v * 2.20462;
+    if (u === "jin") return v * 2;
+    return v;
+  }
+  function unitLabel(u) { return u === "jin" ? "斤" : u; }
+  // YYYY-MM-DD in the user's local time zone (toISOString is UTC and rolls over early in the Americas)
+  function localISO(dt) {
+    var m = dt.getMonth() + 1, d = dt.getDate();
+    return dt.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (d < 10 ? "0" : "") + d;
+  }
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function save(entries) { localStorage.setItem(STORE_KEY, JSON.stringify(entries)); }
+
+  function fmtDate(iso) {
+    var d = new Date(iso + "T12:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* ---------- side-effect chips ---------- */
+  var seGrid = document.getElementById("seGrid");
+  SE_LIST.forEach(function (name) {
+    var chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "se-chip";
+    chip.textContent = name;
+    chip.addEventListener("click", function () {
+      if (name === "None") {
+        selectedSE = { "None": true };
+      } else {
+        delete selectedSE["None"];
+        if (selectedSE[name]) delete selectedSE[name]; else selectedSE[name] = true;
+      }
+      renderChips();
+    });
+    chip.dataset.name = name;
+    seGrid.appendChild(chip);
+  });
+  function renderChips() {
+    Array.prototype.forEach.call(seGrid.children, function (chip) {
+      chip.classList.toggle("on", !!selectedSE[chip.dataset.name]);
+    });
+  }
+
+  /* ---------- chart ---------- */
+  function renderChart(entries) {
+    var svg = document.getElementById("chart");
+    var wrap = document.getElementById("chartWrap");
+    var pts = entries
+      .filter(function (e) { return typeof e.weightKg === "number" && e.weightKg > 0; })
+      .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    if (pts.length === 0) {
+      wrap.innerHTML = '<div class="chart-empty">Log your weight to see the trend here.</div>';
+      return;
+    }
+    if (!document.getElementById("chart")) {
+      wrap.innerHTML = '<svg id="chart" role="img" aria-label="weight trend chart"></svg>';
+      svg = document.getElementById("chart");
+    }
+    var W = 900, H = 260, padL = 56, padR = 20, padT = 30, padB = 34;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var vals = pts.map(function (p) { return fromKg(p.weightKg, unit); });
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (min === max) { min -= 1; max += 1; }
+    var span = max - min; min -= span * 0.15; max += span * 0.15;
+    // x is scaled by date, so missed days show up as real gaps
+    var t0 = Date.parse(pts[0].date), t1 = Date.parse(pts[pts.length - 1].date);
+    function X(p) { return padL + (t1 === t0 ? 0.5 : (Date.parse(p.date) - t0) / (t1 - t0)) * (W - padL - padR); }
+    function Y(v) { return padT + (1 - (v - min) / (max - min)) * (H - padT - padB); }
+
+    var s = "";
+    // gridlines + y labels
+    for (var g = 0; g <= 4; g++) {
+      var gv = min + (max - min) * g / 4, gy = Y(gv);
+      s += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="#eef3f1" stroke-width="1"/>';
+      s += '<text x="' + (padL - 8) + '" y="' + (gy + 4) + '" text-anchor="end" font-size="12" fill="#8aa099">' + gv.toFixed(1) + '</text>';
+    }
+    // area + line
+    var line = pts.map(function (p, i) { return (i ? "L" : "M") + X(p).toFixed(1) + "," + Y(fromKg(p.weightKg, unit)).toFixed(1); }).join(" ");
+    var area = line + " L" + X(pts[pts.length - 1]).toFixed(1) + "," + (H - padB) + " L" + X(pts[0]).toFixed(1) + "," + (H - padB) + " Z";
+    s += '<path d="' + area + '" fill="#0e9f6e" opacity="0.10"/>';
+    s += '<path d="' + line + '" fill="none" stroke="#0e9f6e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+    // points + x labels (sparse); dose label only where the dose changes
+    var dense = pts.length > 40, lastDose = null, lastLabelX = -Infinity;
+    pts.forEach(function (p) {
+      var cx = X(p), cy = Y(fromKg(p.weightKg, unit));
+      var doseMark = (typeof p.doseMg === "number" && p.doseMg > 0);
+      var r = doseMark ? (dense ? 4.5 : 6) : (dense ? 3 : 4.5);
+      s += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r + '" fill="' + (doseMark ? "#0b7a55" : "#fff") + '" stroke="#0e9f6e" stroke-width="' + (dense ? 2 : 2.5) + '"/>';
+      if (doseMark && p.doseMg !== lastDose) {
+        var anchor = cx < padL + 30 ? "start" : cx > W - padR - 30 ? "end" : "middle";
+        var tx = anchor === "start" ? cx - 6 : anchor === "end" ? cx + 6 : cx;
+        s += '<text x="' + tx.toFixed(1) + '" y="' + (cy - 12) + '" text-anchor="' + anchor + '" font-size="11" fill="#0b7a55" font-weight="700">' + p.doseMg + 'mg</text>';
+      }
+      if (doseMark) lastDose = p.doseMg;
+      if (cx - lastLabelX >= 95) {
+        s += '<text x="' + cx.toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11" fill="#8aa099">' + esc(fmtDate(p.date).replace(/, \d{4}$/, "")) + '</text>';
+        lastLabelX = cx;
+      }
+    });
+    s += '<text x="4" y="12" text-anchor="start" font-size="12" fill="#8aa099" font-weight="600">' + unitLabel(unit) + '</text>';
+    svg.innerHTML = s;
+  }
+
+  /* ---------- stats ---------- */
+  function renderStats(entries) {
+    var sorted = entries.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    document.getElementById("stEntries").textContent = entries.length;
+    // streak: consecutive days ending today or yesterday
+    var daySet = {};
+    entries.forEach(function (e) { daySet[e.date] = true; });
+    var streak = 0, d = new Date();
+    if (!daySet[localISO(d)]) d.setDate(d.getDate() - 1);
+    while (daySet[localISO(d)]) { streak++; d.setDate(d.getDate() - 1); }
+    document.getElementById("stStreak").innerHTML = streak + ' <small>day' + (streak === 1 ? "" : "s") + "</small>";
+    // weight change
+    var withW = sorted.filter(function (e) { return typeof e.weightKg === "number" && e.weightKg > 0; });
+    var chEl = document.getElementById("stChange");
+    if (withW.length >= 2) {
+      var diff = fromKg(withW[withW.length - 1].weightKg - withW[0].weightKg, unit);
+      var sign = diff > 0 ? "+" : "";
+      chEl.innerHTML = '<span class="' + (diff < 0 ? "down" : "") + '">' + sign + diff.toFixed(1) + ' <small>' + unitLabel(unit) + "</small></span>";
+    } else { chEl.textContent = "–"; }
+    // latest dose
+    var withD = sorted.filter(function (e) { return typeof e.doseMg === "number" && e.doseMg > 0; });
+    document.getElementById("stDose").innerHTML = withD.length
+      ? withD[withD.length - 1].doseMg + ' <small>mg</small>' : "–";
+  }
+
+  /* ---------- history + side-effect summary ---------- */
+  function renderEntries(entries) {
+    var box = document.getElementById("entries");
+    var sorted = entries.slice().sort(function (a, b) { return a.date > b.date ? -1 : 1; });
+    if (!sorted.length) { box.innerHTML = '<div class="empty-note">No entries yet — log your first one above.</div>'; return; }
+    box.innerHTML = "";
+    var hidden = showAllHistory ? 0 : Math.max(sorted.length - HISTORY_LIMIT, 0);
+    sorted.slice(0, sorted.length - hidden).forEach(function (e) {
+      var div = document.createElement("div");
+      div.className = "entry";
+      var meta = [];
+      if (typeof e.doseMg === "number" && e.doseMg > 0) meta.push("💉 " + e.doseMg + " mg");
+      if (typeof e.weightKg === "number" && e.weightKg > 0) meta.push("⚖️ " + fromKg(e.weightKg, unit).toFixed(1) + " " + unitLabel(unit));
+      if (e.mood) meta.push("Mood " + esc(e.mood));
+      var tags = (e.sideEffects || []).filter(function (x) { return x !== "None"; })
+        .map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("");
+      div.innerHTML =
+        '<div><div class="d">' + esc(fmtDate(e.date)) + "</div>" +
+        '<div class="meta">' + meta.join(" · ") + "</div>" +
+        (tags ? '<div class="se-tags">' + tags + "</div>" : "") +
+        (e.notes ? '<div class="meta" style="margin-top:4px">📝 ' + esc(e.notes) + "</div>" : "") +
+        '</div><button class="del" title="Delete">×</button>';
+      div.querySelector(".del").addEventListener("click", function () {
+        if (confirm("Delete this entry?")) {
+          var all = load().filter(function (x) { return x.id !== e.id; });
+          save(all); render();
+        }
+      });
+      box.appendChild(div);
+    });
+    if (hidden || showAllHistory && sorted.length > HISTORY_LIMIT) {
+      var more = document.createElement("button");
+      more.type = "button";
+      more.className = "btn ghost";
+      more.style.alignSelf = "flex-start";
+      more.textContent = showAllHistory ? "Show less" : "Show all " + sorted.length + " entries";
+      more.addEventListener("click", function () { showAllHistory = !showAllHistory; renderEntries(load()); });
+      box.appendChild(more);
+    }
+  }
+
+  function renderSeSummary(entries) {
+    var box = document.getElementById("seSummary");
+    var counts = {};
+    entries.forEach(function (e) {
+      (e.sideEffects || []).forEach(function (s) { if (s !== "None") counts[s] = (counts[s] || 0) + 1; });
+    });
+    var keys = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    if (!keys.length) { box.innerHTML = '<div class="empty-note">No side effects logged yet.</div>'; return; }
+    box.innerHTML = keys.map(function (k) {
+      return '<span class="pill">' + esc(k) + " × " + counts[k] + "</span>";
+    }).join("");
+  }
+
+  /* ---------- sample data (for the demo) ---------- */
+  // 20 weeks ending yesterday, following the standard 4-week semaglutide step-up.
+  // Seeded PRNG so every visitor sees the same journey.
+  function makeSampleData() {
+    var seed = 20260526;
+    function rand() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+    var DOSES = [0.25, 0.5, 1.0, 1.7, 2.4];
+    var MOODS = ["1 😞", "2 🙁", "3 😐", "4 🙂", "5 😄"];
+    var WEEKS = 20, DAYS = WEEKS * 7;
+    var start = new Date(); start.setHours(12, 0, 0, 0); start.setDate(start.getDate() - DAYS);
+    var out = [];
+    for (var day = 0; day < DAYS; day++) {
+      var week = Math.floor(day / 7), step = Math.min(Math.floor(week / 4), DOSES.length - 1);
+      var isDoseDay = day % 7 === 0, sinceStep = day - step * 28;
+      var recent = day >= DAYS - 12; // logged every day lately, so the streak is visible
+      if (!isDoseDay && !recent && rand() < 0.45) continue; // missed days are normal
+      var dt = new Date(start); dt.setDate(start.getDate() + day);
+      // loss is fastest early and slows down, with day-to-day water-weight noise
+      var kg = 86 - 9.5 * (1 - Math.exp(-day / 90)) + (rand() - 0.5) * 0.8;
+      // GI side effects cluster right after each step-up and fade over the months
+      var risk = (sinceStep < 5 && step < 4 ? 0.65 : day % 7 < 3 ? 0.3 : 0.08) * (1 - week / 35);
+      var se = [];
+      if (rand() < risk) se.push("Nausea");
+      if (rand() < risk * 0.6) se.push("Fatigue");
+      if (rand() < 0.12) se.push("Constipation");
+      if (rand() < risk * 0.25) se.push("Heartburn");
+      if (sinceStep < 3 && step < 4 && rand() < 0.15) se.push("Vomiting");
+      if (!se.length) se.push("None");
+      var mood = Math.round(3.4 + week * 0.05 + (rand() - 0.5) * 1.6 - (se.length - (se[0] === "None" ? 1 : 0)) * 0.6);
+      var notes = null;
+      if (day === 0) notes = "First injection — 0.25 mg. A little nervous!";
+      else if (isDoseDay && sinceStep === 0) notes = "Stepped up to " + DOSES[step] + " mg.";
+      else if (rand() < 0.04) notes = ["Smaller portions, felt full fast.", "Skipped coffee, nausea was better.", "Walked 8k steps.", "Craving sweets less."][Math.floor(rand() * 4)];
+      out.push({
+        id: "s" + day,
+        date: localISO(dt),
+        doseMg: isDoseDay ? DOSES[step] : null,
+        weightKg: isDoseDay || rand() > 0.15 ? Math.round(kg * 10) / 10 : null,
+        mood: MOODS[Math.max(0, Math.min(4, mood - 1))],
+        sideEffects: se,
+        notes: notes
+      });
+    }
+    return out;
+  }
+
+  function renderBanner(entries) {
+    var banner = document.getElementById("demoBanner");
+    var isSample = localStorage.getItem(SAMPLE_KEY) === "1";
+    if (!entries.length) {
+      document.getElementById("demoTitle").textContent = "👋 First time here?";
+      document.getElementById("demoText").textContent = "Load 20 weeks of sample data to see DoseTrack in action — or just start logging your own below.";
+      document.getElementById("btnDemo").textContent = "Load sample data";
+      banner.hidden = false;
+    } else if (isSample) {
+      document.getElementById("demoTitle").textContent = "🧪 You're exploring sample data";
+      document.getElementById("demoText").textContent = "Try logging today's entry below. When you're ready, clear it and start your own journey.";
+      document.getElementById("btnDemo").textContent = "Clear & start fresh";
+      banner.hidden = false;
+    } else {
+      banner.hidden = true;
+    }
+  }
+  document.getElementById("btnDemo").addEventListener("click", function () {
+    if (load().length) {
+      if (!confirm("Delete all entries and start fresh?")) return;
+      save([]);
+      localStorage.removeItem(SAMPLE_KEY);
+    } else {
+      save(makeSampleData());
+      localStorage.setItem(SAMPLE_KEY, "1");
+    }
+    render();
+  });
+
+  function render() {
+    var entries = load();
+    renderBanner(entries);
+    renderStats(entries);
+    renderChart(entries);
+    renderEntries(entries);
+    renderSeSummary(entries);
+    document.querySelectorAll(".uLabel").forEach(function (el) { el.textContent = unitLabel(unit); });
+    document.querySelectorAll(".unit-row button").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.unit === unit);
+    });
+  }
+
+  /* ---------- form ---------- */
+  document.getElementById("fDate").value = localISO(new Date());
+  document.getElementById("logForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var date = document.getElementById("fDate").value;
+    if (!date) return;
+    var doseRaw = document.getElementById("fDose").value;
+    var weightRaw = document.getElementById("fWeight").value;
+    var entry = {
+      id: "e" + Date.now(),
+      date: date,
+      doseMg: doseRaw === "" ? null : parseFloat(doseRaw),
+      weightKg: weightRaw === "" ? null : toKg(parseFloat(weightRaw), unit),
+      mood: document.getElementById("fMood").value || null,
+      sideEffects: Object.keys(selectedSE),
+      notes: document.getElementById("fNotes").value.trim() || null
+    };
+    var entries = load();
+    var dup = entries.findIndex(function (e) { return e.date === date; });
+    if (dup >= 0) {
+      if (!confirm("An entry for this date already exists. Overwrite it?")) return;
+      entries[dup] = entry;
+    } else entries.push(entry);
+    save(entries);
+    document.getElementById("fDose").value = "";
+    document.getElementById("fWeight").value = "";
+    document.getElementById("fMood").value = "";
+    document.getElementById("fNotes").value = "";
+    selectedSE = {}; renderChips();
+    render();
+  });
+
+  /* ---------- unit toggle ---------- */
+  document.querySelectorAll(".unit-row button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      unit = b.dataset.unit;
+      localStorage.setItem(UNIT_KEY, unit);
+      render();
+    });
+  });
+
+  /* ---------- export / import ---------- */
+  document.getElementById("btnExport").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify(load(), null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "dosetrack-export-" + localISO(new Date()) + ".json";
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+  });
+  document.getElementById("btnImport").addEventListener("click", function () {
+    document.getElementById("fileImport").click();
+  });
+  document.getElementById("fileImport").addEventListener("change", function (ev) {
+    var f = ev.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var data = JSON.parse(r.result);
+        if (!Array.isArray(data)) throw new Error("not an array");
+        // keep only dated entries, and give each an id so delete removes just that one
+        data = data.filter(function (e) { return e && /^\d{4}-\d{2}-\d{2}$/.test(e.date); });
+        data.forEach(function (e, i) { if (!e.id) e.id = "i" + Date.now() + "-" + i; });
+        save(data); localStorage.removeItem(SAMPLE_KEY); render();
+        alert("Imported " + data.length + " entries.");
+      } catch (e) { alert("Could not import: invalid file."); }
+    };
+    r.readAsText(f);
+    ev.target.value = "";
+  });
+
+  renderChips();
+  render();
+})();
+</script>
+</body>
+</html>
