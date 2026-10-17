@@ -75,6 +75,11 @@
     padding: 12px 20px; font-size: 15px; font-weight: 700; cursor: pointer;
   }
   .btn:hover { background: var(--accent-dark); }
+  .btn:disabled { opacity: 0.6; cursor: wait; }
+  .hint { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 12px; }
+  .hint a { color: var(--accent-dark); font-weight: 600; }
+  #healthStatus { margin: 12px 0 0; color: var(--ink); }
+  #healthStatus:empty { display: none; }
   .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); font-weight: 600; }
   .btn.ghost:hover { border-color: var(--accent); color: var(--accent-dark); }
   .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
@@ -165,6 +170,17 @@
 </div>
 
 <div class="card">
+  <h2>🍎 Import from Apple Health</h2>
+  <p class="hint">Pull your weight history straight from the iPhone Health app. The file is read right here in your browser — nothing is uploaded.</p>
+  <div class="btn-row">
+    <button class="btn ghost" id="btnHealth" type="button">Choose export.zip or export.xml</button>
+    <input type="file" id="fileHealth" accept=".zip,.xml" style="display:none">
+  </div>
+  <p class="hint" style="margin:12px 0 0">On iPhone: Health → your profile picture → <em>Export All Health Data</em>. No iPhone? Try it with a <a href="sample-apple-health-export.zip" download>sample export</a>.</p>
+  <p class="hint" id="healthStatus" role="status"></p>
+</div>
+
+<div class="card">
   <h2>🤒 Side-effect summary</h2>
   <div class="se-summary" id="seSummary"><div class="empty-note">No side effects logged yet.</div></div>
 </div>
@@ -176,6 +192,7 @@
     <button class="btn ghost" id="btnExport">⬇ Export JSON</button>
     <button class="btn ghost" id="btnImport">⬆ Import JSON</button>
     <input type="file" id="fileImport" accept="application/json" style="display:none">
+    <button class="btn ghost" id="btnWipe">🗑 Delete all data</button>
   </div>
 </div>
 
@@ -356,6 +373,7 @@
       if (typeof e.doseMg === "number" && e.doseMg > 0) meta.push("💉 " + e.doseMg + " mg");
       if (typeof e.weightKg === "number" && e.weightKg > 0) meta.push("⚖️ " + fromKg(e.weightKg, unit).toFixed(1) + " " + unitLabel(unit));
       if (e.mood) meta.push("Mood " + esc(e.mood));
+      if (e.source) meta.push("🍎 " + esc(e.source));
       var tags = (e.sideEffects || []).filter(function (x) { return x !== "None"; })
         .map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("");
       div.innerHTML =
@@ -534,6 +552,13 @@
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
   });
+  document.getElementById("btnWipe").addEventListener("click", function () {
+    if (!load().length || !confirm("Delete every entry stored in this browser? This can't be undone.")) return;
+    save([]);
+    localStorage.removeItem(SAMPLE_KEY);
+    setHealthStatus("");
+    render();
+  });
   document.getElementById("btnImport").addEventListener("click", function () {
     document.getElementById("fileImport").click();
   });
@@ -554,6 +579,149 @@
     };
     r.readAsText(f);
     ev.target.value = "";
+  });
+
+  /* ---------- Apple Health import ---------- */
+  // Reads the iPhone "Export All Health Data" file (export.zip, or the export.xml inside it)
+  // entirely in the browser. It streams, so a multi-GB export doesn't exhaust memory.
+  var RE_MASS = /<Record type="HKQuantityTypeIdentifierBodyMass"[^>]*>/g;
+  var RE_VAL = / value="([^"]*)"/, RE_UNIT = / unit="([^"]*)"/, RE_START = / startDate="([^"]*)"/;
+  var TO_KG = { kg: 1, lb: 1 / 2.20462, g: 0.001 };
+
+  function setHealthStatus(msg) { document.getElementById("healthStatus").textContent = msg; }
+
+  // Finds the main export XML inside the zip and returns a stream of its uncompressed bytes.
+  async function zipEntryStream(file) {
+    var tailStart = Math.max(0, file.size - 65557);
+    var tail = new DataView(await file.slice(tailStart).arrayBuffer());
+    var eocd = -1;
+    for (var i = tail.byteLength - 22; i >= 0; i--) {
+      if (tail.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error("That file isn't a valid zip.");
+    var cdSize = tail.getUint32(eocd + 12, true), cdOffset = tail.getUint32(eocd + 16, true);
+    if (cdOffset === 0xffffffff && eocd >= 20 && tail.getUint32(eocd - 20, true) === 0x07064b50) {
+      // zip64: the real central-directory location lives in the zip64 end record
+      var z64At = Number(tail.getBigUint64(eocd - 12, true));
+      var z64 = new DataView(await file.slice(z64At, z64At + 56).arrayBuffer());
+      cdSize = Number(z64.getBigUint64(40, true));
+      cdOffset = Number(z64.getBigUint64(48, true));
+    }
+    var cd = new DataView(await file.slice(cdOffset, cdOffset + cdSize).arrayBuffer());
+    var best = null, p = 0;
+    while (p + 46 <= cd.byteLength && cd.getUint32(p, true) === 0x02014b50) {
+      var method = cd.getUint16(p + 10, true);
+      var comp = cd.getUint32(p + 20, true), size = cd.getUint32(p + 24, true), local = cd.getUint32(p + 42, true);
+      var nameLen = cd.getUint16(p + 28, true), extraLen = cd.getUint16(p + 30, true), commentLen = cd.getUint16(p + 32, true);
+      var name = new TextDecoder().decode(new Uint8Array(cd.buffer, p + 46, nameLen));
+      // zip64 extra field carries the real sizes/offset when the 32-bit ones are maxed out
+      for (var e = p + 46 + nameLen, end = e + extraLen; e + 4 <= end; e += 4 + cd.getUint16(e + 2, true)) {
+        if (cd.getUint16(e, true) !== 1) continue;
+        var q = e + 4;
+        if (size === 0xffffffff) { size = Number(cd.getBigUint64(q, true)); q += 8; }
+        if (comp === 0xffffffff) { comp = Number(cd.getBigUint64(q, true)); q += 8; }
+        if (local === 0xffffffff) local = Number(cd.getBigUint64(q, true));
+      }
+      // export.xml is the big one; skip export_cda.xml and macOS resource forks
+      if (/\.xml$/i.test(name) && !/cda/i.test(name) && name.indexOf("__MACOSX") < 0 && (!best || size > best.size)) {
+        best = { method: method, comp: comp, size: size, local: local };
+      }
+      p += 46 + nameLen + extraLen + commentLen;
+    }
+    if (!best) throw new Error("Couldn't find export.xml inside this zip.");
+    var lh = new DataView(await file.slice(best.local, best.local + 30).arrayBuffer());
+    var start = best.local + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+    var stream = file.slice(start, start + best.comp).stream();
+    if (best.method === 0) return stream;
+    if (best.method !== 8) throw new Error("This zip uses a compression DoseTrack can't read — unzip it and choose export.xml.");
+    if (typeof DecompressionStream === "undefined") throw new Error("This browser can't unzip files — unzip the export first and choose export.xml.");
+    return stream.pipeThrough(new DecompressionStream("deflate-raw"));
+  }
+
+  // Scans the XML stream for body-mass records; returns { "YYYY-MM-DD": { kg, at } }.
+  async function readHealthWeights(stream, onProgress) {
+    var reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+    var byDate = {}, buf = "", scanned = 0, found = 0, isHealth = false;
+    function scan(text) {
+      if (!isHealth && text.indexOf("<HealthData") >= 0) isHealth = true;
+      var m;
+      RE_MASS.lastIndex = 0;
+      while ((m = RE_MASS.exec(text))) {
+        var v = RE_VAL.exec(m[0]), u = RE_UNIT.exec(m[0]), s = RE_START.exec(m[0]);
+        if (!v || !u || !s || !TO_KG[u[1]]) continue;
+        var kg = parseFloat(v[1]) * TO_KG[u[1]];
+        if (!(kg > 20 && kg < 400)) continue;
+        var date = s[1].slice(0, 10);
+        found++;
+        // several weigh-ins a day: keep the earliest (morning) one
+        if (!byDate[date] || s[1] < byDate[date].at) byDate[date] = { kg: kg, at: s[1] };
+      }
+    }
+    for (;;) {
+      var r = await reader.read();
+      if (r.done) break;
+      scanned += r.value.length;
+      buf += r.value;
+      // only scan up to the last complete tag; the rest waits for the next chunk
+      var cut = buf.lastIndexOf(">");
+      if (cut >= 0) { scan(buf.slice(0, cut + 1)); buf = buf.slice(cut + 1); }
+      onProgress(scanned, found);
+    }
+    scan(buf);
+    if (!isHealth) throw new Error("This doesn't look like an Apple Health export.");
+    return byDate;
+  }
+
+  document.getElementById("btnHealth").addEventListener("click", function () {
+    document.getElementById("fileHealth").click();
+  });
+  document.getElementById("fileHealth").addEventListener("change", async function (ev) {
+    var f = ev.target.files[0];
+    ev.target.value = "";
+    if (!f) return;
+    var replaceSample = localStorage.getItem(SAMPLE_KEY) === "1" && load().length > 0;
+    if (replaceSample && !confirm("You're viewing sample data. Replace it with your Apple Health weights?")) return;
+    var btn = document.getElementById("btnHealth");
+    btn.disabled = true;
+    setHealthStatus("Reading " + f.name + "…");
+    try {
+      var stream = /\.zip$/i.test(f.name) ? await zipEntryStream(f) : f.stream();
+      var lastShown = 0;
+      var byDate = await readHealthWeights(stream, function (scanned, found) {
+        if (scanned - lastShown < 5e6) return;
+        lastShown = scanned;
+        setHealthStatus("Reading… " + Math.round(scanned / 1e6) + " MB scanned, " + found + " weigh-ins found");
+      });
+      var cutoff = new Date();
+      cutoff.setFullYear(cutoff.getFullYear() - 1);
+      var since = localISO(cutoff);
+      var dates = Object.keys(byDate).filter(function (d) { return d >= since; }).sort();
+      if (!dates.length) { setHealthStatus("No weight records from the last 12 months were found in this export."); return; }
+      // merge: add new days, fill days that have no weight yet, never overwrite a weight you logged
+      var entries = replaceSample ? [] : load();
+      var byEntryDate = {};
+      entries.forEach(function (e) { byEntryDate[e.date] = e; });
+      var added = 0, kept = 0;
+      dates.forEach(function (d) {
+        var kg = Math.round(byDate[d].kg * 10) / 10, e = byEntryDate[d];
+        if (!e) {
+          entries.push({ id: "ah" + d, date: d, doseMg: null, weightKg: kg, mood: null, sideEffects: [], notes: null, source: "Apple Health" });
+          added++;
+        } else if (typeof e.weightKg !== "number") { e.weightKg = kg; added++; }
+        else kept++;
+      });
+      save(entries);
+      if (replaceSample) localStorage.removeItem(SAMPLE_KEY);
+      render();
+      function days(n) { return n + (n === 1 ? " day" : " days"); }
+      if (!added) setHealthStatus("✅ Nothing new — all " + days(kept) + " from this export are already in DoseTrack.");
+      else setHealthStatus("✅ Imported " + days(added) + " of weight from Apple Health (" + fmtDate(dates[0]) + " – " + fmtDate(dates[dates.length - 1]) + ")." +
+        (kept ? " Kept your own weight on " + days(kept) + " you'd already logged." : ""));
+    } catch (err) {
+      setHealthStatus("⚠️ " + (err && err.message ? err.message : "Couldn't read that file."));
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   renderChips();
